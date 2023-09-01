@@ -7,8 +7,8 @@
 #include "addons/TokenHelper.h"
 // Provide the RTDB payload printing info and other helper functions.
 #include "addons/RTDBHelper.h"
-#define WIFI_SSID "Lily’s iPhone"
-#define WIFI_PASSWORD "Lily2004..."
+#define WIFI_SSID "Shrif"
+#define WIFI_PASSWORD "SHsh1212*"
 
 #define API_KEY "AIzaSyCDIX_8R5TSoMmUHrZVrufLrAC32vzNUnw"
 #define USER_EMAIL "mshmohsen2004@gmail.com"
@@ -29,6 +29,8 @@ String timePath = "/timestamp";
 String parentPath;
 
 int timestamp;
+
+int counter = 0;
 FirebaseJson json;
 unsigned long sendDataPrevMillis = 0;
 const unsigned long timerDelay = 5000; // Delay between sending data (milliseconds)
@@ -109,70 +111,70 @@ void setup()
   initWiFi();
   initFirebase();
   //  // Assign the user sign in credentials
-  // configTime(0, 0, ntpServer);
-  // // Assign the api key (required)
-  // config.api_key = API_KEY;
-  // auth.user.email = USER_EMAIL;
-  // auth.user.password = USER_PASSWORD;
+  configTime(0, 0, ntpServer);
+  // Assign the api key (required)
+   config.api_key = API_KEY;
+  auth.user.email = USER_EMAIL;
+   auth.user.password = USER_PASSWORD;
   // // Assign the RTDB URL (required)
-  // config.database_url = DATABASE_URL;
-  // Firebase.reconnectWiFi(true);
-  // fbdo.setResponseSize(4096);
+   config.database_url = DATABASE_URL;
+   Firebase.reconnectWiFi(true);
+   fbdo.setResponseSize(4096);
   // // Assign the callback function for the long running token generation task */
-  // config.token_status_callback = tokenStatusCallback;  //see addons/TokenHelper.h
-  // config.max_token_generation_retry = 5;
+  config.token_status_callback = tokenStatusCallback;  //see addons/TokenHelper.h
+  config.max_token_generation_retry = 5;
   // // Initialize the library with the Firebase authen and config
-  // Firebase.begin(&config, &auth);
+  Firebase.begin(&config, &auth);
 
-  // // Getting the user UID might take a few seconds
-  // Serial.println("Getting User UID");
-  // while ((auth.token.uid) == "") {
-  //   Serial.print('.');
-  //   delay(1000);
-  // }
-  // // Print user UID
-  // uid = auth.token.uid.c_str();
-  // Serial.print("User UID: ");
-  // Serial.println(uid);
-  // // Serial.println(String(Firebase.getToken()));
-  // // Update database path
-  // databasePath = "/gaslogs/" + uid + "/amount";
+  Serial.println("Getting User UID");
+  while ((auth.token.uid) == "") {
+    Serial.print('.');
+    delay(1000);
+  }
+  // Print user UID
+  uid = auth.token.uid.c_str();
+  Serial.print("User UID: ");
+  Serial.println(uid);
+  // Serial.println(String(Firebase.getToken()));
+  // Update database path
+  databasePath = "/UsersData/" + uid + "/readings";
 }
 
 
-// void flameDetection(){
-//   int flameValue = analogRead(flamePin);
+
+void flameDetection(){
+  int flameValue = analogRead(flamePin);
   
-//   if (flameValue < 200) {
-//     Serial.println("Flame detected!");
-//     I2C_LCD1.print("Flame detected!");
-//     alarm();
-//     I2C_LCD1.clear(); 
-//   }
-// }
+  if (flameValue < 200) {
+    Serial.println("Flame detected!");
+    I2C_LCD1.print("Flame detected!");
+    alarm();
+    I2C_LCD1.clear(); 
+  }
+}
 
-// void GasDetection(){
-//   int gasValue = analogRead(gasPin);
-//   // Serial.println(gasValue);
+void GasDetection(){
+  int gasValue = analogRead(gasPin);
+  // Serial.println(gasValue);
 
-//   if (gasValue > 1000) {
-//     Serial.println("Gas detected!");
-//     I2C_LCD1.print("Gas detected!");
-//     alarm();
-//     I2C_LCD1.clear(); 
-//   }
-// }
+  if (gasValue > 1000) {
+    Serial.println("Gas detected!");
+    I2C_LCD1.print("Gas detected!");
+    alarm();
+    I2C_LCD1.clear(); 
+  }
+}
 
-// void alarm(){
-//   for(int i = 0 ; i < 3 ; i++){
-//     digitalWrite(BuzzerPin,HIGH);
-//     digitalWrite(ledPin, HIGH);
-//     delay(500); 
-//     digitalWrite(BuzzerPin,LOW);
-//     digitalWrite(ledPin, LOW);
-//     delay(500); 
-//   }  
-// }
+void alarm(){
+  for(int i = 0 ; i < 3 ; i++){
+    digitalWrite(BuzzerPin,HIGH);
+    digitalWrite(ledPin, HIGH);
+    delay(500); 
+    digitalWrite(BuzzerPin,LOW);
+    digitalWrite(ledPin, LOW);
+    delay(500); 
+  }  
+}
 
 
 
@@ -195,14 +197,18 @@ String getInput() {
 
 void loop() {
   unsigned long currentMillis = millis();
-  // flameDetection();
-  // GasDetection();
+  flameDetection();
+  GasDetection();
   int IrValue = analogRead(IrPin);
 
   if (IrValue < 2000) {
+    I2C_LCD1.print("Enter Password");
     String password = getInput();
+    I2C_LCD1.clear();
     if (password == "1234") {
+    I2C_LCD1.print("Enter Amount");
       String amountStr = getInput();
+    I2C_LCD1.clear();
       int amount = amountStr.toInt(); // Convert amountStr to an integer
       GasServo.write(180);
       int T = amount*0.5;
@@ -211,12 +217,13 @@ void loop() {
       GasServo.write(0);
       
       
-      if (Firebase.ready() && (currentMillis - sendDataPrevMillis > timerDelay || sendDataPrevMillis == 0)) {
+      if (Firebase.ready() && (currentMillis - sendDataPrevMillis > timerDelay || sendDataPrevMillis == 0) && amount != 0) {
         sendDataPrevMillis = currentMillis;
         // Get current timestamp
         timestamp = getTime();
         
-parentPath = "/gaslogs/" + String(uid) + "/readings/" + String(timestamp);
+      parentPath = "/gaslogs/" + String(uid) + "/readings/" + String(timestamp);
+     String Path = "/gaslogs/" + String(uid) + "/readings/" + String(counter-1);
 
         json.clear(); // Clear the JSON object before using it
         json.set(amountPath.c_str(), amount); // Set gas sensor reading
@@ -233,8 +240,9 @@ parentPath = "/gaslogs/" + String(uid) + "/readings/" + String(timestamp);
         
         delay(5000);
         
-  if (Firebase.RTDB.getInt(&firebaseData, String(parentPath + "/gasValue"))) {
+  if (Firebase.RTDB.getInt(&firebaseData, String(Path + "/amount")) && amount == 0) {
   int getGasValue = firebaseData.to<int>();
+  Serial.println(getGasValue);
       GasServo.write(180);
       int T = getGasValue * 0.5;
       Serial.println(T);
@@ -249,6 +257,7 @@ parentPath = "/gaslogs/" + String(uid) + "/readings/" + String(timestamp);
         
         Serial.println("-------------------------------------");
       }
+      counter++;
     }
   }
 }
